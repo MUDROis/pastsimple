@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Past Simple Quest - Interactive Practice!</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
+<style>
+  * { font-family: 'Nunito', sans-serif; }
+  body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow-x: hidden; }
+  .game-container { max-width: 700px; margin: 0 auto; padding: 20px; }
+  .card { background: rgba(255,255,255,0.95); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 32px; transition: all 0.3s ease; }
+  .card:hover { transform: translateY(-2px); }
+  .question-text { font-size: 1.5rem; font-weight: 800; color: #2d3748; text-align: center; margin: 20px 0; line-height: 1.6; }
+  .option-button { display: block; width: 100%; padding: 16px 24px; margin: 10px 0; border: 3px solid #e2e8f0; border-radius: 16px; background: white; font-size: 1.2rem; font-weight: 700; color: #4a5568; cursor: pointer; transition: all 0.2s ease; text-align: left; }
+  .option-button:hover { border-color: #a78bfa; background: #f5f3ff; transform: translateX(8px); }
+  .option-button.correct { border-color: #48bb78; background: #f0fff4; color: #276749; animation: popIn 0.3s ease; }
+  .option-button.wrong { border-color: #fc8181; background: #fff5f5; color: #c53030; animation: shake 0.5s ease; }
+  .option-button:disabled { cursor: default; opacity: 0.7; }
+  .option-button:disabled:hover { transform: none; }
+  .progress-bar { height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin: 16px 0; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 10px; transition: width 0.5s ease; }
+  .score-display { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: rgba(255,255,255,0.2); border-radius: 16px; margin-bottom: 16px; backdrop-filter: blur(10px); }
+  .score-item { display: flex; align-items: center; gap: 8px; font-weight: 700; color: white; font-size: 1.1rem; }
+  .streak-badge { background: linear-gradient(135deg, #f6d365, #fda085); color: #744210; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 0.9rem; animation: pulse 1s ease infinite; }
+  .hint-box { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #f6e05e; border-radius: 16px; padding: 16px; margin-top: 16px; display: none; animation: slideUp 0.3s ease; }
+  .hint-box.show { display: block; }
+  .next-button { display: none; margin: 20px auto 0; padding: 14px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: all 0.3s ease; animation: slideUp 0.3s ease; }
+  .next-button.show { display: block; }
+  .next-button:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+  .explanation { display: none; background: linear-gradient(135deg, #ebf8ff, #e6fffa); border: 2px solid #90cdf4; border-radius: 16px; padding: 16px; margin-top: 12px; animation: slideUp 0.3s ease; }
+  .explanation.show { display: block; }
+  .type-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+  .type-affirmative { background: #f0fff4; color: #276749; }
+  .type-negative { background: #fff5f5; color: #c53030; }
+  .type-question { background: #ebf8ff; color: #2c5282; }
+  .start-screen, .result-screen { text-align: center; padding: 40px; }
+  .start-screen h1 { font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .start-screen p { color: #718096; font-size: 1.1rem; margin-bottom: 24px; }
+  .start-button { padding: 16px 48px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 50px; font-size: 1.3rem; font-weight: 800; cursor: pointer; transition: all 0.3s ease; animation: bounce 2s ease infinite; }
+  .start-button:hover { transform: scale(1.08); box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4); }
+  .rule-card { background: white; border-radius: 16px; padding: 16px; margin: 12px 0; border-left: 5px solid; text-align: left; }
+  .rule-card.affirmative { border-color: #48bb78; }
+  .rule-card.negative { border-color: #fc8181; }
+  .rule-card.question { border-color: #63b3ed; }
+  .stars { font-size: 3rem; margin: 16px 0; }
+  .confetti-piece { position: fixed; width: 10px; height: 10px; border-radius: 50%; pointer-events: none; z-index: 9999; animation: confettiFall 3s ease forwards; }
+  .category-button { padding: 12px 24px; border: 3px solid #e2e8f0; border-radius: 16px; background: white; font-weight: 700; cursor: pointer; transition: all 0.2s ease; font-size: 1rem; }
+  .category-button:hover { transform: scale(1.05); }
+  .category-button.active { border-color: #667eea; background: #f5f3ff; color: #667eea; }
+  .mode-select, .difficulty-selector { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
+  @keyframes popIn { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-10px); } 80% { transform: translateX(10px); } }
+  @keyframes slideUp { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  @keyframes confettiFall { 0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+  @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+  .float-animation { animation: float 3s ease-in-out infinite; }
+  .verb-display { background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-radius: 16px; padding: 20px; text-align: center; margin: 16px 0; }
+  .verb-arrow { font-size: 1.5rem; color: #a78bfa; margin: 0 12px; }
+  .verb-v1 { color: #7c3aed; font-weight: 800; font-size: 1.3rem; }
+  .verb-v2 { color: #276749; font-weight: 800; font-size: 1.3rem; }
+  .sentence-builder { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 12px; background: #f7fafc; border-radius: 16px; margin: 12px 0; border: 2px solid #e2e8f0; }
+  .word-bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 16px; background: #f5f3ff; border-radius: 16px; margin-top: 12px; border: 2px dashed #d6bcfa; }
+  .word-chip { display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 25px; font-weight: 700; margin: 4px; cursor: pointer; transition: all 0.2s ease; user-select: none; }
+  .word-chip:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+  .word-chip.used { opacity: 0.4; cursor: default; }
+  .word-chip.used:hover { transform: none; box-shadow: none; }
+  .check-button { padding: 12px 32px; background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: all 0.3s ease; margin-top: 16px; }
+  .check-button:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(72, 187, 120, 0.3); }
+  .reset-button { padding: 12px 32px; background: #e2e8f0; color: #4a5568; border: none; border-radius: 50px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; margin-top: 12px; margin-left: 12px; }
+  .reset-button:hover { background: #cbd5e0; }
+  .input-answer { padding: 12px 20px; border: 3px solid #e2e8f0; border-radius: 16px; font-size: 1.2rem; font-weight: 700; text-align: center; width: 200px; transition: all 0.3s ease; outline: none; }
+  .input-answer:focus { border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2); }
+  .input-answer.correct { border-color: #48bb78; background: #f0fff4; }
+  .input-answer.wrong { border-color: #fc8181; background: #fff5f5; }
+  .level-badge { padding: 4px 12px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; }
+  .level-easy { background: linear-gradient(135deg, #68d391, #48bb78); color: white; }
+  .level-medium { background: linear-gradient(135deg, #f6ad55, #ed8936); color: white; }
+  .level-hard { background: linear-gradient(135deg, #fc8181, #f56565); color: white; }
+  .difficulty-option { padding: 10px 20px; border: 3px solid #e2e8f0; border-radius: 12px; background: white; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
+  .difficulty-option:hover { transform: scale(1.05); }
+  .difficulty-option.active { border-color: #667eea; background: #f5f3ff; color: #667eea; }
+</style>
+</head>
+<body>
+
+<div class="game-container" id="application">
+  <!-- START SCREEN -->
+  <div id="startScreen" class="card start-screen">
+    <div class="float-animation" style="font-size: 4rem;">🚀</div>
+    <h1>Past Simple Quest!</h1>
+    <p>Master the past tense in a fun way! 🎯</p>
+    
+    <div style="text-align: left; max-width: 500px; margin: 0 auto 24px;">
+      <div class="rule-card affirmative">
+        <strong style="color:#276749;">✅ Affirmative:</strong> Subject + <strong>V2</strong> (Past Form)<br>
+        <em style="color:#718096;">"I went to school."</em>
+      </div>
+      <div class="rule-card negative">
+        <strong style="color:#c53030;">❌ Negative:</strong> Subject + <strong>DID NOT</strong> + V1 (Base Form)<br>
+        <em style="color:#718096;">"I did not go to school."</em>
+      </div>
+      <div class="rule-card question">
+        <strong style="color:#2c5282;">❓ Question:</strong> <strong>DID</strong> + Subject + V1?<br>
+        <em style="color:#718096;">"Did you go to school?"</em>
+      </div>
+    </div>
+
+    <p style="color:#a0aec0; font-size: 0.95rem; margin-bottom: 8px;">Choose difficulty level:</p>
+    <div class="difficulty-selector">
+      <button class="difficulty-option active" onclick="selectDifficulty('easy')" id="diff-easy"> Easy</button>
+      <button class="difficulty-option" onclick="selectDifficulty('medium')" id="diff-medium">⚡ Medium</button>
+      <button class="difficulty-option" onclick="selectDifficulty('hard')" id="diff-hard">🔥 Hard</button>
+    </div>
+
+    <p style="color:#a0aec0; font-size: 0.95rem; margin: 16px 0 8px;">Question type:</p>
+    <div class="mode-select">
+      <button class="category-button active" onclick="selectMode('mixed')" id="mode-mixed">🎲 Mixed</button>
+      <button class="category-button" onclick="selectMode('affirmative')" id="mode-affirmative">✅ Affirmative</button>
+      <button class="category-button" onclick="selectMode('negative')" id="mode-negative">❌ Negative</button>
+      <button class="category-button" onclick="selectMode('question')" id="mode-question">❓ Questions</button>
+    </div>
+    
+    <div style="margin: 16px 0;">
+      <label style="font-weight:700; color:#4a5568;">Number of questions:</label>
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
+        <button class="category-button" onclick="selectCount(5)" id="count-5" style="padding:8px 20px;">5</button>
+        <button class="category-button active" onclick="selectCount(10)" id="count-10" style="padding:8px 20px;">10</button>
+        <button class="category-button" onclick="selectCount(15)" id="count-15" style="padding:8px 20px;">15</button>
+      </div>
+    </div>
+
+    <button class="start-button" onclick="startGame()">Let's Go! 🎮</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen" style="display:none;">
+    <div class="score-display">
+      <div class="score-item">
+        <span>⭐</span>
+        <span id="scoreText">0</span>
+      </div>
+      <div class="score-item">
+        <span id="questionNumber">1</span> / <span id="totalQuestions">10</span>
+      </div>
+      <div id="streakContainer" style="display:none;">
+        <span class="streak-badge">🔥 <span id="streakText">0</span> streak!</span>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+
+    <div class="card" id="questionCard">
+      <div style="text-align:center; margin-bottom: 8px;">
+        <span class="type-badge" id="typeBadge">Affirmative</span>
+        <span class="level-badge" id="levelBadge" style="margin-left:8px;">Easy</span>
+      </div>
+
+      <div id="questionArea"></div>
+
+      <div class="explanation" id="explanation"></div>
+      <div class="hint-box" id="hintBox"></div>
+
+      <div style="text-align:center;">
+        <button class="next-button" id="nextButton" onclick="nextQuestion()">Next Question →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="resultScreen" style="display:none;" class="card result-screen">
+    <div class="stars" id="resultStars"></div>
+    <h1 id="resultTitle" style="font-size:2rem; font-weight:900; color:#2d3748;"></h1>
+    <p id="resultMessage" style="color:#718096; font-size:1.1rem; margin:12px 0;"></p>
+    
+    <div style="display:flex; justify-content:center; gap:24px; margin:24px 0; flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:2.5rem;">✅</div>
+        <div style="font-weight:800; color:#48bb78;" id="correctCount">0</div>
+        <div style="color:#718096; font-size:0.85rem;">Correct</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:2.5rem;">❌</div>
+        <div style="font-weight:800; color:#fc8181;" id="wrongCount">0</div>
+        <div style="color:#718096; font-size:0.85rem;">Wrong</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:2.5rem;">🔥</div>
+        <div style="font-weight:800; color:#f6ad55;" id="bestStreak">0</div>
+        <div style="color:#718096; font-size:0.85rem;">Best Streak</div>
+      </div>
+    </div>
+
+    <div id="reviewSection" style="text-align:left; margin:20px 0;"></div>
+    <div id="mistakeModeContainer" style="display:none; margin-top:16px;">
+      <button class="start-button" onclick="startMistakeReview()" style="background: linear-gradient(135deg, #f6ad55, #ed8936); animation:none;">🔁 Practice Mistakes</button>
+    </div>
+    <button class="start-button" onclick="restartGame()" style="margin-top:12px;">Play Again! 🔄</button>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// 🧠 STATE & CONFIG
+// ==========================================
+const sentenceOrderState = { words: [], chips: [] };
+let currentMode = 'mixed';
+let currentDifficulty = 'easy';
+let questionCount = 10;
+let currentQuestions = [];
+let currentIndex = 0;
+let score = 0;
+let streak = 0;
+let bestStreak = 0;
+let correctAnswers = 0;
+let wrongAnswers = 0;
+let answered = false;
+let userAnswers = [];
+let wrongQuestionsPool = []; // 🔥 Error practice mode storage
+
+// ==========================================
+// 📚 IRREGULAR VERBS DATABASE
+// ==========================================
+const irregularVerbs = {
+  'be': 'was/were', 'become': 'became', 'begin': 'began', 'break': 'broke', 'bring': 'brought',
+  'build': 'built', 'buy': 'bought', 'catch': 'caught', 'choose': 'chose', 'come': 'came',
+  'cost': 'cost', 'cut': 'cut', 'do': 'did', 'draw': 'drew', 'drink': 'drank', 'drive': 'drove',
+  'eat': 'ate', 'fall': 'fell', 'feel': 'felt', 'find': 'found', 'fly': 'flew', 'forget': 'forgot',
+  'get': 'got', 'give': 'gave', 'go': 'went', 'grow': 'grew', 'have': 'had', 'hear': 'heard',
+  'hide': 'hid', 'hit': 'hit', 'hold': 'held', 'hurt': 'hurt', 'keep': 'kept', 'know': 'knew',
+  'leave': 'left', 'lend': 'lent', 'let': 'let', 'lose': 'lost', 'make': 'made', 'mean': 'meant',
+  'meet': 'met', 'pay': 'paid', 'put': 'put', 'read': 'read', 'ride': 'rode', 'ring': 'rang',
+  'run': 'ran', 'say': 'said', 'see': 'saw', 'sell': 'sold', 'send': 'sent', 'sing': 'sang',
+  'sit': 'sat', 'sleep': 'slept', 'speak': 'spoke', 'spend': 'spent', 'stand': 'stood',
+  'steal': 'stole', 'swim': 'swam', 'take': 'took', 'teach': 'taught', 'tell': 'told',
+  'think': 'thought', 'throw': 'threw', 'understand': 'understood', 'wake': 'woke', 'wear': 'wore',
+  'win': 'won', 'write': 'wrote'
+};
+
+// ==========================================
+// 🗂️ QUESTIONS DATABASE
+// ==========================================
+const questionsDatabase = [
+  // EASY - AFFIRMATIVE
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'She ___ to the park yesterday.', answer: 'went', options: ['went', 'go', 'goes', 'going'], explanation: 'Affirmative: Subject + V2. "go" → "went" (irregular)', verb: 'go' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'They ___ pizza for dinner last night.', answer: 'ate', options: ['ate', 'eat', 'eats', 'eating'], explanation: 'Affirmative: Subject + V2. "eat" → "ate" (irregular)', verb: 'eat' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'I ___ my homework after school.', answer: 'finished', options: ['finished', 'finish', 'finishes', 'finishing'], explanation: 'Affirmative: Subject + V2. "finish" → "finished" (regular: +ed)', verb: 'finish' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'He ___ football with his friends.', answer: 'played', options: ['played', 'play', 'plays', 'playing'], explanation: 'Affirmative: Subject + V2. "play" → "played" (regular: +ed)', verb: 'play' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'We ___ a great movie last weekend.', answer: 'watched', options: ['watched', 'watch', 'watches', 'watching'], explanation: 'Affirmative: Subject + V2. "watch" → "watched" (regular: +ed)', verb: 'watch' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'The cat ___ on the sofa all day.', answer: 'slept', options: ['slept', 'sleep', 'sleeps', 'sleeping'], explanation: 'Affirmative: Subject + V2. "sleep" → "slept" (irregular)', verb: 'sleep' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'My mom ___ a delicious cake.', answer: 'made', options: ['made', 'make', 'makes', 'making'], explanation: 'Affirmative: Subject + V2. "make" → "made" (irregular)', verb: 'make' },
+  { type: 'affirmative', difficulty: 'easy', format: 'multiple', prompt: 'I ___ very happy with my test score.', answer: 'was', options: ['was', 'am', 'were', 'be'], explanation: 'Affirmative: Subject + V2. "am" → "was" (irregular be-verb)', verb: 'be' },
+  
+  // EASY - NEGATIVE
+  { type: 'negative', difficulty: 'easy', format: 'multiple', prompt: 'She ___ ___ to the party last night.', answer: 'did not go', options: ['did not go', 'didn\'t went', 'did not went', 'doesn\'t go'], explanation: 'Negative: Subject + DID NOT + V1. Never use V2 after "did not"!', verb: 'go' },
+  { type: 'negative', difficulty: 'easy', format: 'multiple', prompt: 'I ___ ___ my homework. (not do)', answer: 'did not do', options: ['did not do', 'did not did', 'didn\'t does', 'do not did'], explanation: 'Negative: Subject + DID NOT + V1. "do" stays as V1!', verb: 'do' },
+  { type: 'negative', difficulty: 'easy', format: 'multiple', prompt: 'They ___ ___ pizza yesterday. (not eat)', answer: 'did not eat', options: ['did not eat', 'did not ate', 'didn\'t eated', 'does not eat'], explanation: 'Negative: Subject + DID NOT + V1. "eat" stays as V1!', verb: 'eat' },
+  { type: 'negative', difficulty: 'easy', format: 'multiple', prompt: 'He ___ ___ TV after school. (not watch)', answer: 'did not watch', options: ['did not watch', 'did not watched', 'didn\'t watches', 'does not watch'], explanation: 'Negative: Subject + DID NOT + V1. "watch" stays as V1!', verb: 'watch' },
+  
+  // EASY - QUESTIONS
+  { type: 'question', difficulty: 'easy', format: 'multiple', prompt: '___ you go to school yesterday?', answer: 'Did', options: ['Did', 'Do', 'Does', 'Were'], explanation: 'Question: DID + Subject + V1? "Did" comes BEFORE the subject!', verb: 'go' },
+  { type: 'question', difficulty: 'easy', format: 'multiple', prompt: '___ she eat breakfast this morning?', answer: 'Did', options: ['Did', 'Do', 'Does', 'Was'], explanation: 'Question: DID + Subject + V1? Use "Did" for past tense questions!', verb: 'eat' },
+  { type: 'question', difficulty: 'easy', format: 'multiple', prompt: 'Where ___ they go last weekend?', answer: 'did', options: ['did', 'do', 'does', 'were'], explanation: 'Question: Q-word + DID + Subject + V1? "Did" comes before the subject!', verb: 'go' },
+  { type: 'question', difficulty: 'easy', format: 'multiple', prompt: '___ your dad cook dinner last night?', answer: 'Did', options: ['Did', 'Do', 'Does', 'Was'], explanation: 'Question: DID + Subject + V1? Use "Did" for past tense questions!', verb: 'cook' },
+
+  // MEDIUM - AFFIRMATIVE
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'She ___ (study) hard for the exam.', answer: 'studied', options: ['studied', 'study', 'studies', 'studying'], explanation: 'Affirmative: Subject + V2. "study" → "studied" (consonant + y → ied)', verb: 'study' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'He ___ (write) a letter to his grandma.', answer: 'wrote', options: ['wrote', 'write', 'writes', 'writing'], explanation: 'Affirmative: Subject + V2. "write" → "wrote" (irregular)', verb: 'write' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'They ___ (run) in the race last month.', answer: 'ran', options: ['ran', 'run', 'runs', 'running'], explanation: 'Affirmative: Subject + V2. "run" → "ran" (irregular)', verb: 'run' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'We ___ (buy) new shoes yesterday.', answer: 'bought', options: ['bought', 'buy', 'buys', 'buying'], explanation: 'Affirmative: Subject + V2. "buy" → "bought" (irregular)', verb: 'buy' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'She ___ (teach) English last year.', answer: 'taught', options: ['taught', 'teach', 'teaches', 'teaching'], explanation: 'Affirmative: Subject + V2. "teach" → "taught" (irregular)', verb: 'teach' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'He ___ (think) about the problem.', answer: 'thought', options: ['thought', 'think', 'thinks', 'thinking'], explanation: 'Affirmative: Subject + V2. "think" → "thought" (irregular)', verb: 'think' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'They ___ (build) a treehouse last summer.', answer: 'built', options: ['built', 'build', 'builds', 'building'], explanation: 'Affirmative: Subject + V2. "build" → "built" (irregular)', verb: 'build' },
+  { type: 'affirmative', difficulty: 'medium', format: 'multiple', prompt: 'I ___ (feel) sick yesterday.', answer: 'felt', options: ['felt', 'feel', 'feels', 'feeling'], explanation: 'Affirmative: Subject + V2. "feel" → "felt" (irregular)', verb: 'feel' },
+  
+  // MEDIUM - NEGATIVE
+  { type: 'negative', difficulty: 'medium', format: 'multiple', prompt: 'She ___ (not play) outside yesterday.', answer: 'did not play', options: ['did not play', 'did not played', 'didn\'t plays', 'does not play'], explanation: 'Negative: Subject + DID NOT + V1. "play" stays as V1!', verb: 'play' },
+  { type: 'negative', difficulty: 'medium', format: 'multiple', prompt: 'They ___ (not study) for the test.', answer: 'did not study', options: ['did not study', 'did not studied', 'didn\'t studies', 'does not study'], explanation: 'Negative: Subject + DID NOT + V1. "study" stays as V1!', verb: 'study' },
+  { type: 'negative', difficulty: 'medium', format: 'multiple', prompt: 'He ___ (not sleep) well last night.', answer: 'did not sleep', options: ['did not sleep', 'did not slept', 'didn\'t sleeps', 'does not sleep'], explanation: 'Negative: Subject + DID NOT + V1. "sleep" stays as V1!', verb: 'sleep' },
+  { type: 'negative', difficulty: 'medium', format: 'multiple', prompt: 'We ___ (not see) the movie.', answer: 'did not see', options: ['did not see', 'did not saw', 'didn\'t sees', 'does not see'], explanation: 'Negative: Subject + DID NOT + V1. "see" stays as V1!', verb: 'see' },
+  
+  // MEDIUM - QUESTIONS
+  { type: 'question', difficulty: 'medium', format: 'multiple', prompt: '___ (did/do) you finish your homework?', answer: 'Did', options: ['Did', 'Do', 'Does', 'Done'], explanation: 'Question: DID + Subject + V1? Use "Did" for past tense questions!', verb: 'finish' },
+  { type: 'question', difficulty: 'medium', format: 'multiple', prompt: 'Where ___ (did/do) you buy that?', answer: 'did', options: ['did', 'do', 'does', 'done'], explanation: 'Question: Q-word + DID + Subject + V1? Use "did" in past tense questions!', verb: 'buy' },
+  { type: 'question', difficulty: 'medium', format: 'multiple', prompt: '___ (Did/Do) they play football yesterday?', answer: 'Did', options: ['Did', 'Do', 'Does', 'Done'], explanation: 'Question: DID + Subject + V1? Capital "Did" at the start!', verb: 'play' },
+  { type: 'question', difficulty: 'medium', format: 'multiple', prompt: 'What time ___ she arrive?', answer: 'did', options: ['did', 'do', 'does', 'done'], explanation: 'Question: Q-word + DID + Subject + V1? Use "did" for past questions!', verb: 'arrive' },
+
+  // HARD - AFFIRMATIVE
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'She ___ (study) hard for the exam.', answer: 'studied', explanation: 'Affirmative: Subject + V2. "study" → "studied" (regular: y→ied)', verb: 'study' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'He ___ (write) a letter to his grandma.', answer: 'wrote', explanation: 'Affirmative: Subject + V2. "write" → "wrote" (irregular)', verb: 'write' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'They ___ (run) in the race last month.', answer: 'ran', explanation: 'Affirmative: Subject + V2. "run" → "ran" (irregular)', verb: 'run' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'We ___ (buy) new shoes yesterday.', answer: 'bought', explanation: 'Affirmative: Subject + V2. "buy" → "bought" (irregular)', verb: 'buy' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'She ___ (teach) English last year.', answer: 'taught', explanation: 'Affirmative: Subject + V2. "teach" → "taught" (irregular)', verb: 'teach' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'He ___ (think) about the problem.', answer: 'thought', explanation: 'Affirmative: Subject + V2. "think" → "thought" (irregular)', verb: 'think' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'They ___ (build) a treehouse.', answer: 'built', explanation: 'Affirmative: Subject + V2. "build" → "built" (irregular)', verb: 'build' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'I ___ (feel) sick yesterday.', answer: 'felt', explanation: 'Affirmative: Subject + V2. "feel" → "felt" (irregular)', verb: 'feel' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'She ___ (sing) beautifully.', answer: 'sang', explanation: 'Affirmative: Subject + V2. "sing" → "sang" (irregular)', verb: 'sing' },
+  { type: 'affirmative', difficulty: 'hard', format: 'type', prompt: 'He ___ (drive) to work.', answer: 'drove', explanation: 'Affirmative: Subject + V2. "drive" → "drove" (irregular)', verb: 'drive' },
+  
+  // HARD - NEGATIVE
+  { type: 'negative', difficulty: 'hard', format: 'type', prompt: 'She ___ (not play) outside yesterday.', answer: 'did not play', explanation: 'Negative: Subject + DID NOT + V1. "play" stays as V1!', verb: 'play' },
+  { type: 'negative', difficulty: 'hard', format: 'type', prompt: 'They ___ (not study) for the test.', answer: 'did not study', explanation: 'Negative: Subject + DID NOT + V1. "study" stays as V1!', verb: 'study' },
+  { type: 'negative', difficulty: 'hard', format: 'type', prompt: 'He ___ (not sleep) well last night.', answer: 'did not sleep', explanation: 'Negative: Subject + DID NOT + V1. "sleep" stays as V1!', verb: 'sleep' },
+  { type: 'negative', difficulty: 'hard', format: 'type', prompt: 'We ___ (not see) the movie.', answer: 'did not see', explanation: 'Negative: Subject + DID NOT + V1. "see" stays as V1!', verb: 'see' },
+  { type: 'negative', difficulty: 'hard', format: 'type', prompt: 'I ___ (not understand) the lesson.', answer: 'did not understand', explanation: 'Negative: Subject + DID NOT + V1. "understand" stays as V1!', verb: 'understand' },
+  { type: 'negative', difficulty: 'hard', format: 'type', prompt: 'She ___ (not speak) to him.', answer: 'did not speak', explanation: 'Negative: Subject + DID NOT + V1. "speak" stays as V1!', verb: 'speak' },
+  
+  // HARD - QUESTIONS
+  { type: 'question', difficulty: 'hard', format: 'type', prompt: '___ (did/do) you finish your homework?', answer: 'Did', explanation: 'Question: DID + Subject + V1? Use "Did" for past tense questions!', verb: 'finish' },
+  { type: 'question', difficulty: 'hard', format: 'type', prompt: 'Where ___ (did/do) you buy that?', answer: 'did', explanation: 'Question: Q-word + DID + Subject + V1? Use "did" in past tense questions!', verb: 'buy' },
+  { type: 'question', difficulty: 'hard', format: 'type', prompt: '___ (Did/Do) they play football yesterday?', answer: 'Did', explanation: 'Question: DID + Subject + V1? Capital "Did" at the start!', verb: 'play' },
+  { type: 'question', difficulty: 'hard', format: 'type', prompt: 'What time ___ she arrive?', answer: 'did', explanation: 'Question: Q-word + DID + Subject + V1? Use "did" for past questions!', verb: 'arrive' },
+  { type: 'question', difficulty: 'hard', format: 'type', prompt: 'Why ___ he leave early?', answer: 'did', explanation: 'Question: Q-word + DID + Subject + V1? Use "did" for past questions!', verb: 'leave' },
+  { type: 'question', difficulty: 'hard', format: 'type', prompt: 'Who ___ you meet yesterday?', answer: 'did', explanation: 'Question: Q-word + DID + Subject + V1? Use "did" for past questions!', verb: 'meet' },
+
+  // SENTENCE ORDER - ALL LEVELS
+  { type: 'affirmative', difficulty: 'easy', format: 'order', prompt: 'Arrange: She / park / went / the / to', answer: 'She went to the park', words: ['She', 'went', 'to', 'the', 'park'], explanation: 'Affirmative: Subject + V2 → "She went to the park"', verb: 'go' },
+  { type: 'negative', difficulty: 'easy', format: 'order', prompt: 'Arrange: not / go / did / They / to / school', answer: 'They did not go to school', words: ['They', 'did', 'not', 'go', 'to', 'school'], explanation: 'Negative: Subject + DID NOT + V1 → "They did not go to school"', verb: 'go' },
+  { type: 'question', difficulty: 'easy', format: 'order', prompt: 'Arrange: Did / homework / do / you / your', answer: 'Did you do your homework', words: ['Did', 'you', 'do', 'your', 'homework'], explanation: 'Question: DID + Subject + V1 → "Did you do your homework?"', verb: 'do' },
+  { type: 'affirmative', difficulty: 'medium', format: 'order', prompt: 'Arrange: played / They / yesterday / football', answer: 'They played football yesterday', words: ['They', 'played', 'football', 'yesterday'], explanation: 'Affirmative: Subject + V2 → "They played football yesterday"', verb: 'play' },
+  { type: 'question', difficulty: 'medium', format: 'order', prompt: 'Arrange: Where / go / did / she', answer: 'Where did she go', words: ['Where', 'did', 'she', 'go'], explanation: 'Question: Q-word + DID + Subject + V1 → "Where did she go?"', verb: 'go' },
+  { type: 'negative', difficulty: 'medium', format: 'order', prompt: 'Arrange: eat / He / pizza / did / not', answer: 'He did not eat pizza', words: ['He', 'did', 'not', 'eat', 'pizza'], explanation: 'Negative: Subject + DID NOT + V1 → "He did not eat pizza"', verb: 'eat' },
+  { type: 'affirmative', difficulty: 'hard', format: 'order', prompt: 'Arrange: wrote / He / letter / a / yesterday', answer: 'He wrote a letter yesterday', words: ['He', 'wrote', 'a', 'letter', 'yesterday'], explanation: 'Affirmative: Subject + V2 → "He wrote a letter yesterday"', verb: 'write' },
+  { type: 'question', difficulty: 'hard', format: 'order', prompt: 'Arrange: did / buy / What / you', answer: 'What did you buy', words: ['What', 'did', 'you', 'buy'], explanation: 'Question: Q-word + DID + Subject + V1 → "What did you buy?"', verb: 'buy' },
+  { type: 'negative', difficulty: 'hard', format: 'order', prompt: 'Arrange: not / understand / I / did / it', answer: 'I did not understand it', words: ['I', 'did', 'not', 'understand', 'it'], explanation: 'Negative: Subject + DID NOT + V1 → "I did not understand it"', verb: 'understand' },
+];
+
+// ==========================================
+// 🛠️ UTILITY FUNCTIONS
+// ==========================================
+function normalizeAnswer(answer) {
+  return answer
+    .toLowerCase()
+    .trim()
+    .replace(/didn't/g, 'did not').replace(/don't/g, 'do not').replace(/doesn't/g, 'does not')
+    .replace(/won't/g, 'will not').replace(/can't/g, 'cannot').replace(/isn't/g, 'is not')
+    .replace(/aren't/g, 'are not').replace(/wasn't/g, 'was not').replace(/weren't/g, 'were not')
+    .replace(/haven't/g, 'have not').replace(/hasn't/g, 'has not').replace(/hadn't/g, 'had not')
+    .replace(/\s+/g, ' ');
+}
+
+function getPastForm(verb) {
+  if (irregularVerbs[verb]) return irregularVerbs[verb];
+  if (verb.endsWith('y')) {
+    const secondLast = verb[verb.length - 2];
+    if (!['a','e','i','o','u'].includes(secondLast)) return verb.slice(0, -1) + 'ied';
+  }
+  if (verb.endsWith('e')) return verb + 'd';
+  return verb + 'ed';
+}
+
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-select .category-button').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode-' + mode).classList.add('active');
+}
+
+function selectDifficulty(diff) {
+  currentDifficulty = diff;
+  document.querySelectorAll('.difficulty-option').forEach(b => b.classList.remove('active'));
+  document.getElementById('diff-' + diff).classList.add('active');
+}
+
+function selectCount(count) {
+  questionCount = count;
+  document.querySelectorAll('[id^="count-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('count-' + count).classList.add('active');
+}
+
+// ==========================================
+// 🎮 GAME LOGIC
+// ==========================================
+function startGame() {
+  let pool = currentMode === 'mixed' 
+    ? questionsDatabase.filter(q => q.difficulty === currentDifficulty)
+    : questionsDatabase.filter(q => q.type === currentMode && q.difficulty === currentDifficulty);
+  
+  currentQuestions = shuffleArray(pool).slice(0, Math.min(questionCount, pool.length));
+  currentQuestions.forEach(q => { if(q.format === 'multiple' && q.options) q.options = shuffleArray(q.options); });
+  
+  resetGameState();
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('totalQuestions').textContent = currentQuestions.length;
+  showQuestion();
+}
+
+function resetGameState() {
+  currentIndex = 0; score = 0; streak = 0; bestStreak = 0;
+  correctAnswers = 0; wrongAnswers = 0; userAnswers = []; answered = false;
+  sentenceOrderState.words = []; sentenceOrderState.chips = [];
+}
+
+function startMistakeReview() {
+  if (wrongQuestionsPool.length === 0) return;
+  currentQuestions = shuffleArray(wrongQuestionsPool.map(a => a.questionRef));
+  currentQuestions.forEach(q => { if(q.format === 'multiple' && q.options) q.options = shuffleArray(q.options); });
+  resetGameState();
+  wrongQuestionsPool = []; // Clear for next run
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  document.getElementById('totalQuestions').textContent = currentQuestions.length;
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  const q = currentQuestions[currentIndex];
+  const typeNames = {affirmative:'Affirmative', negative:'Negative', question:'Question'};
+  const typeClasses = {affirmative:'type-affirmative', negative:'type-negative', question:'type-question'};
+  const emojis = {affirmative:'✅', negative:'❌', question:'❓'};
+  const diffNames = {easy:'Easy', medium:'Medium', hard:'Hard'};
+  const diffClasses = {easy:'level-easy', medium:'level-medium', hard:'level-hard'};
+  
+  document.getElementById('typeBadge').textContent = emojis[q.type] + ' ' + typeNames[q.type];
+  document.getElementById('typeBadge').className = 'type-badge ' + typeClasses[q.type];
+  document.getElementById('levelBadge').textContent = diffNames[q.difficulty];
+  document.getElementById('levelBadge').className = 'level-badge ' + diffClasses[q.difficulty];
+  document.getElementById('questionNumber').textContent = currentIndex + 1;
+  document.getElementById('progressFill').style.width = ((currentIndex) / currentQuestions.length * 100) + '%';
+  document.getElementById('scoreText').textContent = score;
+  
+  document.getElementById('streakContainer').style.display = streak >= 2 ? 'block' : 'none';
+  document.getElementById('streakText').textContent = streak;
+  
+  document.getElementById('explanation').className = 'explanation';
+  document.getElementById('hintBox').className = 'hint-box';
+  document.getElementById('nextButton').className = 'next-button';
+  
+  const area = document.getElementById('questionArea');
+  if (q.format === 'multiple') renderMultipleChoice(q, area);
+  else if (q.format === 'type') renderTypeAnswer(q, area);
+  else if (q.format === 'order') renderOrderAnswer(q, area);
+}
+
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= currentQuestions.length) showResults();
+  else showQuestion();
+}
+
+// ==========================================
+// 🖥️ RENDERERS
+// ==========================================
+function renderMultipleChoice(q, area) {
+  let html = `<div class="question-text">${q.prompt}</div>
+    <div class="verb-display"><span class="verb-v1">V1: ${q.verb}</span><span class="verb-arrow">⟶</span><span class="verb-v2">V2: ${getPastForm(q.verb)}</span></div><div>`;
+  q.options.forEach(opt => {
+    html += `<button class="option-button" onclick="checkMultipleChoice(this, '${opt.replace(/'/g, "\\'")}')">${opt}</button>`;
+  });
+  area.innerHTML = html + '</div>';
+}
+
+function renderTypeAnswer(q, area) {
+  area.innerHTML = `
+    <div class="question-text">${q.prompt}</div>
+    <div class="verb-display"><span class="verb-v1">V1: ${q.verb}</span><span class="verb-arrow">⟶</span><span class="verb-v2">V2: ${getPastForm(q.verb)}</span></div>
+    <div style="text-align:center;">
+      <input type="text" class="input-answer" id="typeInput" placeholder="Type your answer..." autocomplete="off" onkeypress="if(event.key==='Enter')checkTypeAnswer()">
+      <br><button class="check-button" onclick="checkTypeAnswer()" id="typeCheckButton">Check ✓</button>
+    </div>`;
+  setTimeout(() => document.getElementById('typeInput').focus(), 100);
+}
+
+function renderOrderAnswer(q, area) {
+  sentenceOrderState.words = []; sentenceOrderState.chips = [];
+  let shuffled = shuffleArray(q.words);
+  let html = `<div class="question-text">${q.prompt}</div>
+    <div class="sentence-builder" id="sentenceBuilder"><span style="color:#a0aec0; font-style:italic;">Click words to build the sentence...</span></div>
+    <div class="word-bank" id="wordBank">`;
+  shuffled.forEach((w, i) => {
+    html += `<span class="word-chip" id="word-${i}" onclick="addToSentence('${w.replace(/'/g, "\\'")}', ${i})">${w}</span>`;
+  });
+  area.innerHTML = html + `</div>
+    <div style="text-align:center;"><button class="check-button" onclick="checkOrderAnswer()">Check ✓</button><button class="reset-button" onclick="resetOrder()">Reset </button></div>`;
+  sentenceOrderState.chips = shuffled.map((w, i) => ({word:w, index:i, used:false}));
+}
+
+// ==========================================
+// ✅ CHECKERS & FEEDBACK
+// ==========================================
+function checkMultipleChoice(btn, selected) {
+  if (answered) return; answered = true;
+  const q = currentQuestions[currentIndex];
+  document.querySelectorAll('.option-button').forEach(b => b.disabled = true);
+  const isCorrect = selected === q.answer;
+  
+  if (isCorrect) {
+    btn.classList.add('correct'); btn.innerHTML = selected + ' ✅';
+    score += 10 + streak * 2; streak++; if(streak>bestStreak) bestStreak=streak; correctAnswers++;
+  } else {
+    btn.classList.add('wrong'); btn.innerHTML = selected + ' ';
+    document.querySelectorAll('.option-button').forEach(b => {
+      if(b.textContent.replace(' ✅','').replace(' ','').trim() === q.answer) { b.classList.add('correct'); b.innerHTML = q.answer + ' ✅'; }
+    });
+    streak = 0; wrongAnswers++;
+  }
+  saveAnswer(q, isCorrect, selected);
+  updateUI(q);
+}
+
+function checkTypeAnswer() {
+  if (answered) return;
+  const input = document.getElementById('typeInput');
+  const val = input.value.trim(); if(!val) return;
+  answered = true;
+  const q = currentQuestions[currentIndex];
+  const isCorrect = normalizeAnswer(val) === normalizeAnswer(q.answer);
+  
+  if (isCorrect) { input.classList.add('correct'); score += 10 + streak * 2; streak++; if(streak>bestStreak) bestStreak=streak; correctAnswers++; }
+  else { input.classList.add('wrong'); streak = 0; wrongAnswers++; }
+  
+  document.getElementById('typeCheckButton').disabled = true; input.disabled = true;
+  saveAnswer(q, isCorrect, val);
+  updateUI(q);
+}
+
+function addToSentence(word, idx) {
+  if (answered) return;
+  const chip = document.getElementById('word-' + idx);
+  if (chip.classList.contains('used')) return;
+  chip.classList.add('used');
+  sentenceOrderState.words.push({word, chipIndex:idx});
+  const builder = document.getElementById('sentenceBuilder');
+  if (sentenceOrderState.words.length === 1) builder.innerHTML = '';
+  const span = document.createElement('span');
+  span.className = 'word-chip'; span.textContent = word;
+  span.style.background = 'linear-gradient(135deg, #48bb78, #38a169)'; span.style.margin = '4px';
+  span.onclick = function() { removeFromSentence(word, idx, this); };
+  builder.appendChild(span);
+}
+
+function removeFromSentence(word, idx, el) {
+  if (answered) return;
+  const i = sentenceOrderState.words.findIndex(w => w.word === word && w.chipIndex === idx);
+  if (i > -1) sentenceOrderState.words.splice(i, 1);
+  document.getElementById('word-' + idx).classList.remove('used'); el.remove();
+  if (sentenceOrderState.words.length === 0) document.getElementById('sentenceBuilder').innerHTML = '<span style="color:#a0aec0; font-style:italic;">Click words to build the sentence...</span>';
+}
+
+function resetOrder() {
+  if (answered) return;
+  sentenceOrderState.words = [];
+  document.getElementById('sentenceBuilder').innerHTML = '<span style="color:#a0aec0; font-style:italic;">Click words to build the sentence...</span>';
+  document.querySelectorAll('.word-chip').forEach(c => c.classList.remove('used'));
+}
+
+function checkOrderAnswer() {
+  if (answered || sentenceOrderState.words.length === 0) return;
+  answered = true;
+  const q = currentQuestions[currentIndex];
+  const userSent = sentenceOrderState.words.map(w => w.word).join(' ');
+  const isCorrect = userSent === q.answer;
+  
+  if (isCorrect) {
+    document.querySelectorAll('.word-chip').forEach(c => { if(!c.classList.contains('used')) { c.style.background = 'linear-gradient(135deg, #48bb78, #38a169)'; c.style.opacity = '0.5'; } });
+    score += 15 + streak * 2; streak++; if(streak>bestStreak) bestStreak=streak; correctAnswers++;
+  } else { streak = 0; wrongAnswers++; }
+  
+  saveAnswer(q, isCorrect, userSent);
+  updateUI(q);
+}
+
+function saveAnswer(q, isCorrect, userAns) {
+  userAnswers.push({ question: q.prompt, correct: isCorrect, userAnswer: userAns, correctAnswer: q.answer, questionRef: q });
+}
+
+function updateUI(q) {
+  document.getElementById('scoreText').textContent = score;
+  document.getElementById('streakContainer').style.display = streak >= 2 ? 'block' : 'none';
+  document.getElementById('streakText').textContent = streak;
+  
+  const typeNames = {affirmative:'✅ Affirmative', negative:'❌ Negative', question:'❓ Question'};
+  let hintHTML = '';
+  if(q.type === 'affirmative') hintHTML = `<strong style="color:#276749;">✅ Affirmative Rule:</strong> Subject + V2 (Past Form)`;
+  else if(q.type === 'negative') hintHTML = `<strong style="color:#c53030;">❌ Negative Rule:</strong> Subject + DID NOT + V1 (Base Form)`;
+  else hintHTML = `<strong style="color:#2c5282;">❓ Question Rule:</strong> DID + Subject + V1 (Base Form)?`;
+  
+  document.getElementById('hintBox').innerHTML = hintHTML; document.getElementById('hintBox').className = 'hint-box show';
+  document.getElementById('explanation').innerHTML = `<div style="font-size:1.1rem;"><span style="font-size:1.3rem;">💡</span> <strong>Why?</strong></div><div style="margin-top:8px; color:#4a5568;">${q.explanation}</div>`;
+  document.getElementById('explanation').className = 'explanation show';
+  document.getElementById('nextButton').className = 'next-button show';
+  
+  const card = document.getElementById('questionCard');
+  card.style.boxShadow = isCorrect ? '0 20px 60px rgba(72, 187, 120, 0.3)' : '0 20px 60px rgba(252, 129, 129, 0.3)';
+  setTimeout(() => card.style.boxShadow = '0 20px 60px rgba(0,0,0,0.2)', 1000);
+  if(isCorrect) createMiniConfetti();
+}
+
+// ==========================================
+// 🏆 RESULTS & MISTAKE MODE
+// ==========================================
+function showResults() {
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'block';
+  
+  const pct = Math.round((correctAnswers / currentQuestions.length) * 100);
+  let stars, title, msg;
+  if(pct >= 90) { stars='⭐⭐⭐'; title='Amazing! 🎉'; msg='You\'re a Past Simple master!'; }
+  else if(pct >= 70) { stars='⭐⭐'; title='Great Work! 🌟'; msg='You\'re getting really good!'; }
+  else if(pct >= 50) { stars='⭐'; title='Good Try! 💪'; msg='Practice makes perfect!'; }
+  else { stars='🌱'; title='Keep Learning! 📚'; msg='Review the rules and try again!'; }
+  
+  document.getElementById('resultStars').textContent = stars;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMessage').textContent = msg;
+  document.getElementById('correctCount').textContent = correctAnswers;
+  document.getElementById('wrongCount').textContent = wrongAnswers;
+  document.getElementById('bestStreak').textContent = bestStreak;
+  
+  // 🔥 Collect mistakes for practice mode
+  wrongQuestionsPool = userAnswers.filter(a => !a.correct);
+  document.getElementById('mistakeModeContainer').style.display = wrongQuestionsPool.length > 0 ? 'block' : 'none';
+  
+  let review = '<h3 style="font-weight:800; margin-bottom:12px; color:#2d3748;">📝 Review:</h3>';
+  userAnswers.forEach((a, i) => {
+    const col = a.correct ? '#276749' : '#c53030';
+    review += `<div style="padding:10px; margin:8px 0; background:${a.correct?'#f0fff4':'#fff5f5'}; border-radius:12px; border-left:4px solid ${col};">
+      <div style="font-weight:700; color:#2d3748;">${a.correct?'✅':'❌'} Q${i+1}: ${a.question}</div>
+      <div style="font-size:0.9rem; color:#718096; margin-top:4px;">Your answer: <strong style="color:${col}">${a.userAnswer}</strong>
+      ${!a.correct ? ` → Correct: <strong style="color:#276749">${a.correctAnswer}</strong>` : ''}</div></div>`;
+  });
+  document.getElementById('reviewSection').innerHTML = review;
+  if(pct >= 70) createConfetti();
+}
+
+function restartGame() {
+  document.getElementById('startScreen').style.display = 'block';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+}
+
+// ==========================================
+// 🎉 VISUAL EFFECTS
+// ==========================================
+function createMiniConfetti() {
+  const colors = ['#667eea','#764ba2','#48bb78','#f6d365','#fc8181','#63b3ed'];
+  for(let i=0; i<15; i++) {
+    const c = document.createElement('div'); c.className='confetti-piece';
+    c.style.left = Math.random()*100+'vw'; c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDuration = (Math.random()*2+1.5)+'s'; c.style.width = c.style.height = (Math.random()*8+5)+'px';
+    document.body.appendChild(c); setTimeout(()=>c.remove(), 3500);
+  }
+}
+
+function createConfetti() {
+  const colors = ['#667eea','#764ba2','#48bb78','#f6d365','#fc8181','#63b3ed','#f6ad55','#68d391'];
+  for(let i=0; i<50; i++) {
+    setTimeout(()=>{
+      const c = document.createElement('div'); c.className='confetti-piece';
+      c.style.left = Math.random()*100+'vw'; c.style.background = colors[Math.floor(Math.random()*colors.length)];
+      c.style.animationDuration = (Math.random()*2+2)+'s'; c.style.width = c.style.height = (Math.random()*10+6)+'px';
+      document.body.appendChild(c); setTimeout(()=>c.remove(), 4000);
+    }, i*50);
+  }
+}
+</script>
+
+</body>
+</html>
